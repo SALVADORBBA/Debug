@@ -1,6 +1,6 @@
-## Debug no Projeto
+## Debug no Adianti Framework
 
-Para facilitar a depuração de dados no projeto, você pode adicionar as funções abaixo no arquivo `init.php`:
+Para facilitar a depuração de dados no **Adianti Framework**, você pode adicionar as funções abaixo no arquivo `init.php`:
 
 ```php
 function dd($ResponSer) {

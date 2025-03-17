@@ -1,0 +1,132 @@
+ 
+
+public static function Debug($response)
+{
+    $return = null;
+
+    if (!is_object($response) && !is_array($response)) {
+        $return = $response;
+    }
+
+    if ($response instanceof TRecord || is_object($response)) {
+        $recordCount = 1;
+    } elseif ($response instanceof TCollection) {
+        $recordCount = $response->count();
+    } elseif (is_array($response)) {
+        $recordCount = count($response);
+    } else {
+        $recordCount = 0;
+    }
+
+    function objectToArray($obj)
+    {
+        if (is_object($obj)) {
+            $array = (array) $obj;
+        } elseif (is_array($obj)) {
+            $array = $obj;
+        } else {
+            return $obj;
+        }
+
+        $cleanArray = [];
+        foreach ($array as $key => $value) {
+            if (is_string($key)) {
+                $key = preg_replace('/^\x00.*\x00/', '', $key);
+            }
+            $cleanArray[$key] = objectToArray($value);
+        }
+        return $cleanArray;
+    }
+
+    $arrayData = $return ?? objectToArray($response);
+
+    $output = print_r($response, true);
+    preg_match('/(\w+)\s+Object/', $output, $matches);
+    $objectName = $matches[1] ?? "Variavel";
+
+    $Usuario = TSession::getValue('username');
+    $Login = TSession::getValue('login');
+
+    $debugInfo = "Objeto: {$objectName}\n";
+    $debugInfo .= "Registros Localizados: {$recordCount}\n";
+    $debugInfo .= "Usuario: {$Usuario}\n";
+    $debugInfo .= "Login: {$Login}\n";
+    $debugInfo .= "----------------------------------------\n\n";
+    
+    if (!is_array($arrayData)) {
+        $debugInfo .= "Returno: " . json_encode($arrayData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    } else {
+        $debugInfo .= json_encode($arrayData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    }
+
+    $token = AdiantiApplicationConfig::get('general', 'token');
+    $versao = 'MAD v' . $token['builder']['version'] . ' | APP: ' . $token['general']['application_version'];
+
+    TScript::create("
+        (function(){
+            let debugPanel = document.getElementById('debug-panel');
+            if (!debugPanel) {
+                debugPanel = document.createElement('div');
+                debugPanel.id = 'debug-panel';
+                debugPanel.style.position = 'fixed';
+                debugPanel.style.top = '0';
+                debugPanel.style.right = '-420px';
+                debugPanel.style.width = '820px';
+                debugPanel.style.height = '100vh';
+                debugPanel.style.background = 'rgba(0, 0, 0, 0.85)';
+                debugPanel.style.color = '#0f0';
+                debugPanel.style.overflowY = 'auto';
+                debugPanel.style.padding = '15px';
+                debugPanel.style.zIndex = '9999';
+                debugPanel.style.transition = 'right 0.3s ease-in-out';
+                debugPanel.style.fontFamily = 'verdana';
+                debugPanel.style.fontSize = '12px';
+                debugPanel.style.borderLeft = '3px solid red';
+                debugPanel.style.borderRadius = '10px 0 0 10px';
+                
+                let header = document.createElement('div');
+                header.style.background = '#222';
+                header.style.color = '#fff';
+                header.style.padding = '10px';
+                header.style.textAlign = 'center';
+                header.style.fontWeight = 'bold';
+                header.style.fontSize = '14px';
+                header.style.borderBottom = '2px solid red';
+                header.innerText = 'DUMP DIE v1.2 | {$versao}';
+
+                let closeButton = document.createElement('button');
+                closeButton.innerText = 'Fechar Janela';
+                closeButton.style.background = 'red';
+                closeButton.style.color = 'white';
+                closeButton.style.padding = '5px 10px';
+                closeButton.style.border = 'none';
+                closeButton.style.cursor = 'pointer';
+                closeButton.style.marginBottom = '10px';
+                closeButton.style.display = 'block';
+                closeButton.style.width = '100%';
+                closeButton.onclick = function() {
+                    debugPanel.style.right = '-820px';
+                };
+
+                let content = document.createElement('pre');
+                content.innerText = atob('".base64_encode($debugInfo)."');
+
+                debugPanel.appendChild(header);
+                debugPanel.appendChild(closeButton);
+                debugPanel.appendChild(content);
+                document.body.appendChild(debugPanel);
+            } else {
+                let content = debugPanel.querySelector('pre');
+                content.innerText = atob('".base64_encode($debugInfo)."');
+            }
+
+            setTimeout(() => {
+                debugPanel.style.right = '0';
+            }, 100);
+        })();
+    ");
+}
+
+
+
+

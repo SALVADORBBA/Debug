@@ -1,5 +1,9 @@
- 
-
+ <?php
+class MasterClass
+{
+    /**
+     * Função de depuração personalizada para o Adianti Framework.
+     */
 public static function Debug($response)
 {
     $return = null;
@@ -128,5 +132,5 @@ public static function Debug($response)
 }
 
 
-
+}
 
